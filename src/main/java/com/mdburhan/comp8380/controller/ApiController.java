@@ -2,6 +2,7 @@ package com.mdburhan.comp8380.controller;
 
 import com.mdburhan.comp8380.service.LuceneService;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -30,11 +31,11 @@ public class ApiController {
         return ResponseEntity.ok(service.createIndex());
     }
     @GetMapping(value = "/search/{query}/{nMatches}")
-    public ResponseEntity<Object> searchIndex(@PathVariable(name = "query") String queryString, @PathVariable(name = "nMatches") int nMatches) throws IOException, ParseException {
+    public ResponseEntity<Object> searchIndex(@PathVariable(name = "query") String queryString, @PathVariable(name = "nMatches") int nMatches) throws IOException, ParseException, InvalidTokenOffsetsException {
         return ResponseEntity.ok(service.searchIndex(queryString, nMatches));
     }
     @GetMapping(value = "/phrase_search/{query}/{slop}/{nMatches}")
-    public ResponseEntity<Object> searchPhrase(@PathVariable(name = "query") String queryString, @PathVariable(name = "slop")int slop, @PathVariable("nMatches") int nMatches) throws IOException, ParseException {
+    public ResponseEntity<Object> searchPhrase(@PathVariable(name = "query") String queryString, @PathVariable(name = "slop")int slop, @PathVariable("nMatches") int nMatches) throws IOException, ParseException, InvalidTokenOffsetsException {
         return ResponseEntity.ok(service.phraseSearch(queryString,slop,nMatches));
     }
     @GetMapping(value = "/phrase_search_v2/{query}/{slop}/{nMatches}")

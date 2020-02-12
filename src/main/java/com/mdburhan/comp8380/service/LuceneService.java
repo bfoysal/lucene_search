@@ -2,7 +2,9 @@ package com.mdburhan.comp8380.service;
 
 import com.mdburhan.comp8380.domain.SearchResults;
 import com.mdburhan.comp8380.domain.TitleAndPath;
+import com.mdburhan.comp8380.domain.TitlePathAndFragment;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -18,6 +20,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +81,7 @@ public class LuceneService {
             System.out.println("indexing " + counter + "-th file " + file.getFileName());
     }
 
-    public SearchResults searchIndex(String queryString, int nMatches) throws IOException, ParseException {
+    public SearchResults searchIndex(String queryString, int nMatches) throws IOException, ParseException, InvalidTokenOffsetsException {
         IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
         IndexSearcher searcher = new IndexSearcher(reader);
         Analyzer analyzer = new StandardAnalyzer();
@@ -86,14 +89,27 @@ public class LuceneService {
         Query query = parser.parse(queryString);
         TopDocs results = searcher.search(query, nMatches);
 
+        SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
+        Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
+
         SearchResults searchResults = new SearchResults();
         searchResults.setTotalHits( results.totalHits);
         List<TitleAndPath> titleAndPaths = new ArrayList<>();
+
         for (int i = 0; i < nMatches; i++) {
-            Document doc = searcher.doc(results.scoreDocs[i].doc);
+            int id = results.scoreDocs[i].doc;
+            Document doc = searcher.doc(id);
             TitleAndPath titleAndPath = new TitleAndPath();
             titleAndPath.setPath(doc.get("path"));
-            titleAndPath.setTitle(doc.get("title")!=null?doc.get("title"):"title not found");
+            String content = doc.get("title");
+
+            TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(),id,"title", analyzer);
+            TextFragment [] fragments = highlighter.getBestTextFragments(tokenStream,content,false, 10);
+            for (int j=0; j < fragments.length; j++){
+                if(fragments[j]!=null){
+                    titleAndPath.setTitle(fragments[j].toString());
+                }
+            }
             titleAndPaths.add(titleAndPath);
         }
         /*System.out.println(results.totalHits + " total matching documents");
@@ -110,25 +126,43 @@ public class LuceneService {
         searchResults.setMatches(titleAndPaths);
         return searchResults;
     }
-    public SearchResults phraseSearch(String queryString,int slop , int nMatches) throws IOException, ParseException {
+    public SearchResults phraseSearch(String queryString,int slop , int nMatches) throws IOException, ParseException, InvalidTokenOffsetsException {
         IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
         IndexSearcher searcher = new IndexSearcher(reader);
         Analyzer analyzer = new StandardAnalyzer();
         QueryParser parser = new QueryParser("contents", analyzer);
         queryString = "\""+queryString+"\"~"+slop;
-
         Query query = parser.parse(queryString);
         TopDocs results = searcher.search(query, nMatches);
-
+        SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
+        Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
         SearchResults searchResults = new SearchResults();
         searchResults.setTotalHits( results.totalHits);
         List<TitleAndPath> titleAndPaths = new ArrayList<>();
-        for (int i = 0; i < nMatches; i++) {
+        /*for (int i = 0; i < nMatches; i++) {
             Document doc = searcher.doc(results.scoreDocs[i].doc);
             TitleAndPath titleAndPath = new TitleAndPath();
             titleAndPath.setPath(doc.get("path"));
             titleAndPath.setTitle(doc.get("title")!=null?doc.get("title"):"title not found");
             titleAndPaths.add(titleAndPath);
+        }*/
+        for (int i=0; i < nMatches; i++){
+            int id = results.scoreDocs[i].doc;
+            Document doc = searcher.doc(id);
+            String content = doc.get("title");
+            TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(),id,"title", analyzer);
+            TextFragment [] fragments = highlighter.getBestTextFragments(tokenStream,content,false, 10);
+            TitleAndPath titleAndPath = new TitleAndPath();
+            titleAndPath.setPath(doc.get("path"));
+            for (int j=0; j < fragments.length; j++){
+                /*if ((fragments[j] != null) && (fragments[j].getScore() > 0)) {
+                    System.out.println((fragments[j].toString()));
+                }*/
+                if ((fragments[j] != null)) {
+                    titleAndPath.setTitle(fragments[j].toString());
+                }
+                titleAndPaths.add(titleAndPath);
+            }
         }
         reader.close();
         searchResults.setMatches(titleAndPaths);
@@ -141,7 +175,7 @@ public class LuceneService {
         IndexSearcher searcher = new IndexSearcher(reader);
         queryString = queryString.toLowerCase();
         String [] terms = queryString.split(" ");
-        PhraseQuery query = new PhraseQuery(0, "contents", terms);
+        PhraseQuery query = new PhraseQuery(slop, "contents", terms);
         TopDocs results = searcher.search(query, nMatches);
         SearchResults searchResults = new SearchResults();
         searchResults.setTotalHits( results.totalHits);
