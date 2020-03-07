@@ -39,7 +39,7 @@ public class ApiController {
         return ResponseEntity.ok(service.phraseSearch(queryString,slop,nMatches));
     }
     @GetMapping(value = "/phrase_search_v2/{query}/{slop}/{nMatches}")
-    public ResponseEntity<Object> searchPhraseV2(@PathVariable(name = "query") String queryString, @PathVariable(name = "slop")int slop, @PathVariable("nMatches") int nMatches) throws IOException, ParseException {
+    public ResponseEntity<Object> searchPhraseV2(@PathVariable(name = "query") String queryString, @PathVariable(name = "slop")int slop, @PathVariable("nMatches") int nMatches) throws IOException, ParseException, InvalidTokenOffsetsException {
         return ResponseEntity.ok(service.phraseSearchV2(queryString,slop,nMatches));
     }
 }

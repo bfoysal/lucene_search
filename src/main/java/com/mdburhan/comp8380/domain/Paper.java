@@ -1,13 +1,16 @@
 package com.mdburhan.comp8380.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * @author burhan <burhan420@gmail.com>
  * @project comp8380
  * @created at 2020-02-04
  */
-public class TitleAndPath {
+public class Paper {
     private String title;
-    private String path;
+    @JsonProperty("abstract")
+    private String abs;
 
     public String getTitle() {
         return title;
@@ -17,11 +20,11 @@ public class TitleAndPath {
         this.title = title;
     }
 
-    public String getPath() {
-        return path;
+    public String getAbs() {
+        return abs;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setAbs(String abs) {
+        this.abs = abs;
     }
 }
