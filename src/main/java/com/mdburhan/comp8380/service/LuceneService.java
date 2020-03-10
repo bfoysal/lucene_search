@@ -12,10 +12,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -159,8 +156,11 @@ public class LuceneService {
         Analyzer analyzer = new StandardAnalyzer();
         QueryParser parser = new QueryParser(CONTENTS, analyzer);
         Query query = parser.parse(queryString);
-        System.out.println(query.toString());
-        TopDocs results = searcher.search(query, nMatches);
+//        System.out.println(query.toString());
+
+        Sort sortByPR = new Sort(new SortField(PAGE_RANK, SortField.Type.DOUBLE));
+        TopDocs results = searcher.search(query, nMatches,sortByPR);
+//        TopDocs results = searcher.search(query, nMatches);
 
         SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
         Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
@@ -173,7 +173,7 @@ public class LuceneService {
             int id = results.scoreDocs[i].doc;
             Document doc = searcher.doc(id);
             Paper paper = new Paper();
-            //paper.setAbs(doc.get(ABSTRACT));
+            paper.setPr(doc.get(PAGE_RANK));
             String title = doc.get(TITLE);
             Fields fields = reader.getTermVectors(id);
             TokenStream titleStream = TokenSources.getTokenStream(TITLE,fields,title,analyzer,-1);

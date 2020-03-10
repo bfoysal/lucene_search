@@ -11,6 +11,7 @@ public class Paper {
     private String title;
     @JsonProperty("abstract")
     private String abs;
+    private String pr;
 
     public String getTitle() {
         return title;
@@ -26,5 +27,13 @@ public class Paper {
 
     public void setAbs(String abs) {
         this.abs = abs;
+    }
+
+    public String getPr() {
+        return pr;
+    }
+
+    public void setPr(String pr) {
+        this.pr = pr;
     }
 }
