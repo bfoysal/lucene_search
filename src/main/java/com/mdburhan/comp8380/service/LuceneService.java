@@ -173,7 +173,7 @@ public class LuceneService {
             int id = results.scoreDocs[i].doc;
             Document doc = searcher.doc(id);
             Paper paper = new Paper();
-            paper.setPr(doc.get(PAGE_RANK));
+//            paper.setPr(doc.get(PAGE_RANK));
             String title = doc.get(TITLE);
             Fields fields = reader.getTermVectors(id);
             TokenStream titleStream = TokenSources.getTokenStream(TITLE,fields,title,analyzer,-1);
@@ -220,7 +220,9 @@ public class LuceneService {
         queryString = "\""+queryString+"\"~"+slop;
         Query query = parser.parse(queryString);
 //        System.out.println(query.toString());
-        TopDocs results = searcher.search(query, nMatches);
+        Sort sortByPR = new Sort(new SortField(PAGE_RANK, SortField.Type.DOUBLE));
+        TopDocs results = searcher.search(query, nMatches,sortByPR);
+//        TopDocs results = searcher.search(query, nMatches);
 
         SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
         Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
